@@ -1,0 +1,6 @@
+{
+  "name": "AzureVibe - AZ-900 Exam Prep",
+  "description": "Comprehensive gamified Microsoft Azure AZ-900 Fundamentals exam preparation platform for the #1MillionDevs Movement, featuring smart quizzes, deep explanations, flashcards, AI study coach, and study planner.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
