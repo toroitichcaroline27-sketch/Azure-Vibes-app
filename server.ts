@@ -9,15 +9,148 @@ import { GoogleGenAI } from '@google/genai';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize Gemini SDK with server-side API Key & User-Agent header
+// Initialize AI Provider Keys (Groq is preferred for blazing-fast inference & Whisper audio)
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+
+// Optional Gemini instance for fallback
 const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
+  apiKey: process.env.GEMINI_API_KEY || 'no-key',
   httpOptions: {
     headers: {
       'User-Agent': 'aistudio-build',
     },
   },
 });
+
+// Resilient fetch with retry against network drops/ECONNRESET
+async function fetchWithRetry(url: string, options: any, maxRetries: number = 3): Promise<Response> {
+  let lastError: any = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      return res;
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[Network] fetch attempt ${attempt}/${maxRetries} failed: ${err?.message || err}. Retrying...`);
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 600 * attempt));
+      }
+    }
+  }
+  throw lastError || new Error('Fetch failed after retries');
+}
+
+// Helper for AI text & structured JSON completion
+async function callAICompletion({
+  systemPrompt,
+  userPrompt,
+  conversationHistory = [],
+  jsonMode = false,
+  model = 'openai/gpt-oss-120b'
+}: {
+  systemPrompt: string;
+  userPrompt: string;
+  conversationHistory?: { role: 'user' | 'model' | 'assistant'; text?: string; content?: string }[];
+  jsonMode?: boolean;
+  model?: string;
+}): Promise<string> {
+  if (GROQ_API_KEY) {
+    const messages: { role: string; content: string }[] = [
+      { role: 'system', content: systemPrompt }
+    ];
+
+    for (const msg of conversationHistory) {
+      messages.push({
+        role: msg.role === 'model' || msg.role === 'assistant' ? 'assistant' : 'user',
+        content: msg.text || msg.content || ''
+      });
+    }
+
+    messages.push({ role: 'user', content: userPrompt });
+
+    const payload: any = {
+      model: model || 'openai/gpt-oss-120b',
+      messages,
+      temperature: 0.7,
+    };
+
+    if (jsonMode) {
+      payload.response_format = { type: 'json_object' };
+    }
+
+    const res = await fetchWithRetry('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Groq API error (${res.status}): ${errText}`);
+    }
+
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
+  }
+
+  if (GEMINI_API_KEY && GEMINI_API_KEY !== 'no-key') {
+    const contents: any[] = [];
+    for (const msg of conversationHistory) {
+      contents.push({
+        role: msg.role === 'assistant' ? 'model' : msg.role,
+        parts: [{ text: msg.text || msg.content || '' }]
+      });
+    }
+    contents.push({ role: 'user', parts: [{ text: userPrompt }] });
+
+    const genAIResponse = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents,
+      config: {
+        systemInstruction: systemPrompt,
+        responseMimeType: jsonMode ? 'application/json' : undefined,
+        temperature: 0.7,
+      }
+    });
+
+    return genAIResponse.text || '';
+  }
+
+  throw new Error('No AI API key found. Please set GROQ_API_KEY or GEMINI_API_KEY in your .env file.');
+}
+
+// Helper for audio speech-to-text using Groq Whisper
+async function callGroqWhisper(audioBuffer: Buffer, mimeType: string = 'audio/webm'): Promise<string> {
+  if (!GROQ_API_KEY) {
+    throw new Error('GROQ_API_KEY is required for Groq Whisper transcription.');
+  }
+
+  const audioBlob = new Blob([new Uint8Array(audioBuffer)], { type: mimeType });
+  const ext = mimeType.includes('wav') ? 'wav' : mimeType.includes('mp3') ? 'mp3' : mimeType.includes('m4a') ? 'm4a' : 'webm';
+  const formData = new FormData();
+  formData.append('file', audioBlob, `recording.${ext}`);
+  formData.append('model', 'whisper-large-v3');
+
+  const res = await fetchWithRetry('https://api.groq.com/openai/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${GROQ_API_KEY}`
+    },
+    body: formData
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Groq Whisper transcription failed (${res.status}): ${errText}`);
+  }
+
+  const data = await res.json();
+  return data.text || '';
+}
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -1171,8 +1304,33 @@ app.post('/api/study-plan/generate', (req, res) => {
   const diffDays = Math.max(3, Math.min(30, Math.ceil(diffTime / (1000 * 60 * 60 * 24))));
   const hours = Number(dailyHours) || 2;
 
-  // Generate structured day-by-day plan mapping the 3 official AZ-900 domains
+  // Extract learner's real weak areas from quiz attempts & diagnostics
+  const progress = calculateProgress(db);
+  const userWeakAreas = (progress.weakAreas || []).filter(w => w.accuracy < 80);
+
   const generatedDays: StudyPlan['days'] = [];
+  let dayCounter = 1;
+
+  // Front-load personalized drills for the learner's weak areas
+  if (userWeakAreas.length > 0) {
+    userWeakAreas.slice(0, 2).forEach((weak) => {
+      if (dayCounter <= diffDays) {
+        generatedDays.push({
+          dayNumber: dayCounter,
+          title: `Day ${dayCounter} (🎯 Priority Weak Area): Drill & Eliminate ${weak.topic} Misconceptions`,
+          domain: weak.domain,
+          estimatedHours: hours,
+          tasks: [
+            { id: `d${dayCounter}-t1`, text: `Deep-dive reading on ${weak.topic} (Current Accuracy: ${weak.accuracy}%)`, completed: false, type: 'read' },
+            { id: `d${dayCounter}-t2`, text: `Master flashcards specifically targeting ${weak.topic}`, completed: false, type: 'flashcard' },
+            { id: `d${dayCounter}-t3`, text: `Take 10-question practice drill on ${weak.domain} with 100% review on distractors`, completed: false, type: 'quiz' },
+            { id: `d${dayCounter}-t4`, text: `Ask AI Study Buddy to break down ${weak.topic} exam traps with everyday African analogies`, completed: false, type: 'lab' }
+          ]
+        });
+        dayCounter++;
+      }
+    });
+  }
 
   const domainMilestones: { title: string; domain: 'concepts' | 'architecture' | 'management'; topics: string[] }[] = [
     {
@@ -1217,22 +1375,23 @@ app.post('/api/study-plan/generate', (req, res) => {
     }
   ];
 
-  for (let i = 1; i <= diffDays; i++) {
-    const milestoneIndex = (i - 1) % domainMilestones.length;
-    const milestone = domainMilestones[milestoneIndex];
-
+  let milestoneIdx = 0;
+  while (dayCounter <= diffDays) {
+    const milestone = domainMilestones[milestoneIdx % domainMilestones.length];
     generatedDays.push({
-      dayNumber: i,
-      title: `Day ${i}: ${milestone.title}`,
+      dayNumber: dayCounter,
+      title: `Day ${dayCounter}: ${milestone.title}`,
       domain: milestone.domain,
       estimatedHours: hours,
       tasks: [
-        { id: `d${i}-t1`, text: `Read Microsoft Learn: ${milestone.topics[0]}`, completed: false, type: 'read' },
-        { id: `d${i}-t2`, text: `Master 3 flashcards on ${milestone.topics[1] || 'Domain Terms'}`, completed: false, type: 'flashcard' },
-        { id: `d${i}-t3`, text: `Take topic quiz with 100% review on wrong answers`, completed: false, type: 'quiz' },
-        { id: `d${i}-t4`, text: `Ask AI Study Buddy to explain ${milestone.topics[2] || 'Key Tricky Concepts'} with real-world analogy`, completed: false, type: 'lab' }
+        { id: `d${dayCounter}-t1`, text: `Read Microsoft Learn: ${milestone.topics[0]}`, completed: false, type: 'read' },
+        { id: `d${dayCounter}-t2`, text: `Master 3 flashcards on ${milestone.topics[1] || 'Domain Terms'}`, completed: false, type: 'flashcard' },
+        { id: `d${dayCounter}-t3`, text: `Take topic quiz with 100% review on wrong answers`, completed: false, type: 'quiz' },
+        { id: `d${dayCounter}-t4`, text: `Ask AI Study Buddy to explain ${milestone.topics[2] || 'Key Tricky Concepts'} with real-world analogy`, completed: false, type: 'lab' }
       ]
     });
+    dayCounter++;
+    milestoneIdx++;
   }
 
   const studyPlan: StudyPlan = {
@@ -1295,7 +1454,58 @@ app.get('/api/transcripts', (req, res) => {
   res.json({ success: true, transcripts: list });
 });
 
-// Transcribe audio using gemini-3.5-transcribe and extract structured study notes
+// Helper to build culturally-aligned African instructions and language options
+function getSystemPrompt(language: string = 'english'): string {
+  let dialectNote = '';
+  if (language === 'sheng') {
+    dialectNote = `LANGUAGE MODE: KENYAN SHENG (Nairobi Urban Youth Slang)
+- Greet the learner enthusiastically in Sheng (e.g., "Sasa msee!", "Niaje buda!", "Manze rada ni safi!").
+- Explain the cloud architecture mechanics using authentic Kenyan everyday analogies (e.g., Matatu stages and conductors for Load Balancers, Boda Boda dispatch for Event Grid/Serverless, M-Pesa transaction surges for Auto-scaling Elasticity, KPLC token system and power cuts for Availability Zones).
+- Keep all official Microsoft Azure service names in clear English (e.g., "Availability Zones", "Blob Storage", "CanNotDelete Lock", "Azure RBAC") so they recognize them instantly in the official exam, while explaining how they work in vivid Sheng.`;
+  } else if (language === 'swahili') {
+    dialectNote = `LANGUAGE MODE: KISWAHILI
+- Msalimie mwanafunzi na ueleze dhana hizi za Azure kwa lugha ya Kiswahili fasaha na rahisi kueleweka.
+- Tumia mifano halisi ya Afrika ya kila siku (kama vile malipo ya simu ya mkononi, biashara za sokoni, gridi ya umeme, usafiri).
+- Weka majina halisi ya huduma za Azure kwa Kiingereza (kama vile Azure Virtual Machines, Resource Groups) ili mwanafunzi asichanganyikiwe kwenye mtihani.`;
+  } else if (language === 'pidgin') {
+    dialectNote = `LANGUAGE MODE: NIGERIAN PIDGIN
+- Greet with warm, vibrant Nigerian Pidgin (e.g., "How far my person!", "Make I break am down for you sharp-sharp!").
+- Use lively Nigerian analogies (e.g., Lagos Danfo traffic vs Traffic Manager, POS agent cash networks vs CDN, NEPA/generator switchover vs High Availability, Dangote cement logistics vs Blob storage tiers).
+- Keep official Azure terms clear in English for exam success.`;
+  } else if (language === 'yoruba') {
+    dialectNote = `LANGUAGE MODE: YORUBA
+- Greet warmly and explain the concepts using relatable Yoruba cultural touchpoints and everyday examples.
+- Keep official Azure technical terms in English for exam preparation.`;
+  } else if (language === 'zulu') {
+    dialectNote = `LANGUAGE MODE: ISIZULU / SOUTH AFRICAN CONTEXT
+- Greet warmly and use relatable South African examples (e.g., Eskom loadshedding vs High Availability / SLAs, taxi ranks vs Load Balancers, Spaza shops vs microservices).
+- Keep official Azure technical terms in English for exam preparation.`;
+  } else if (language === 'french') {
+    dialectNote = `LANGUAGE MODE: FRANÇAIS (Afrique Francophone)
+- Saluez chaleureusement et expliquez les concepts en français clair avec des analogies concrètes africaines (tontines, réseaux mobiles, transport urbain).
+- Gardez les termes techniques officiels d'Azure en anglais.`;
+  } else {
+    dialectNote = `LANGUAGE MODE: ENGLISH WITH VIVID AFRICAN ANALOGIES
+- Use relatable, concrete African infrastructure and everyday life examples (e.g., M-Pesa transaction surges vs Elasticity, KPLC/Eskom grid power outages vs Availability Zones, renting an apartment in Nairobi/Lagos/Johannesburg vs IaaS/PaaS/SaaS, city council bylaws vs Azure Policy & RBAC).`;
+  }
+
+  return `You are "AzureVibe AI Coach" — a charismatic, world-class Microsoft Certified Azure Trainer helping developers in the #1MillionDevs Movement pass the AZ-900 exam with flying colors!
+
+${dialectNote}
+
+Core Rules:
+1. Warm, encouraging, crystal-clear, and structured.
+2. ALWAYS use relatable, concrete real-world analogies.
+3. Clearly state WHICH AZ-900 official domain this question falls under:
+   - Domain 1: Cloud Concepts (25-30%)
+   - Domain 2: Azure Architecture & Services (35-40%)
+   - Domain 3: Azure Management & Governance (30-35%)
+4. Highlight a "⚠️ Common Exam Trap" warning so students don't get tricked on the actual exam.
+5. Provide a memorable 1-sentence mnemonic or mental model.
+6. Format clearly with markdown headers, bullet points, and bold keywords.`;
+}
+
+// Transcribe audio using Groq Whisper and extract structured study notes
 app.post('/api/transcripts/transcribe', async (req, res) => {
   try {
     const { audioData, mimeType, title, category } = req.body;
@@ -1304,47 +1514,38 @@ app.post('/api/transcripts/transcribe', async (req, res) => {
       return res.status(400).json({ error: 'Audio data is required (base64 string)' });
     }
 
-    // Call Gemini 3.5 Transcribe model
-    const audioPart = {
-      inlineData: {
-        mimeType: mimeType || 'audio/webm',
-        data: audioData,
-      },
-    };
+    const audioBuffer = Buffer.from(audioData, 'base64');
+    let transcriptText = '';
 
-    console.log('Sending audio to gemini-3.5-transcribe...');
-    const transcribeResponse = await ai.models.generateContent({
-      model: 'gemini-3.5-transcribe',
-      contents: {
-        parts: [
-          audioPart,
-          { text: 'Transcribe this spoken audio verbatim. Return only the accurate transcription of the speaker.' }
-        ]
-      }
-    });
+    if (GROQ_API_KEY) {
+      console.log('Sending audio to Groq Whisper model...');
+      transcriptText = await callGroqWhisper(audioBuffer, mimeType || 'audio/webm');
+    } else if (GEMINI_API_KEY && GEMINI_API_KEY !== 'no-key') {
+      const audioPart = {
+        inlineData: {
+          mimeType: mimeType || 'audio/webm',
+          data: audioData,
+        },
+      };
+      const transcribeResponse = await ai.models.generateContent({
+        model: 'gemini-3.5-transcribe',
+        contents: {
+          parts: [
+            audioPart,
+            { text: 'Transcribe this spoken audio verbatim. Return only the accurate transcription of the speaker.' }
+          ]
+        }
+      });
+      transcriptText = transcribeResponse.text || 'No speech detected.';
+    } else {
+      throw new Error('No AI API key found. Please set GROQ_API_KEY in your .env file.');
+    }
 
-    const transcriptText = transcribeResponse.text || 'No speech detected.';
+    if (!transcriptText || !transcriptText.trim()) {
+      transcriptText = 'No speech detected in recording.';
+    }
 
-    // Now call gemini-3.8-flash to structure the transcript into study takeaways
-    const analysisResponse = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: `You are an expert Microsoft Azure Certified Trainer (AZ-900).
-Analyze the following transcribed study notes:
-"""
-${transcriptText}
-"""
-
-Return a valid JSON object with:
-{
-  "summary": "2-3 concise sentences summarizing the cloud concepts discussed",
-  "keyTerms": ["list of 3-5 Azure keywords or services mentioned"],
-  "examTips": ["3 high-yield bullet tips for the AZ-900 exam based on this transcript"]
-}`,
-      config: {
-        responseMimeType: 'application/json',
-      }
-    });
-
+    // Now extract structured study takeaways via Groq AI
     let structuredAnalysis = {
       summary: 'Transcript captured successfully.',
       keyTerms: ['Azure Fundamentals', 'AZ-900'],
@@ -1352,8 +1553,26 @@ Return a valid JSON object with:
     };
 
     try {
-      if (analysisResponse.text) {
-        structuredAnalysis = JSON.parse(analysisResponse.text);
+      const analysisPrompt = `Analyze the following transcribed AZ-900 study note:
+"""
+${transcriptText}
+"""
+
+Return valid JSON with:
+{
+  "summary": "2-3 concise sentences summarizing the cloud concepts discussed",
+  "keyTerms": ["list of 3-5 Azure keywords or services mentioned"],
+  "examTips": ["3 high-yield bullet tips for the AZ-900 exam based on this transcript"]
+}`;
+
+      const analysisJson = await callAICompletion({
+        systemPrompt: 'You are an expert Microsoft Azure Certified Trainer (AZ-900). Return valid JSON only.',
+        userPrompt: analysisPrompt,
+        jsonMode: true
+      });
+
+      if (analysisJson) {
+        structuredAnalysis = JSON.parse(analysisJson);
       }
     } catch (e) {
       console.warn('Could not parse analysis JSON:', e);
@@ -1365,7 +1584,7 @@ Return a valid JSON object with:
       title: title || `Audio Study Note (${new Date().toLocaleDateString()})`,
       category: category || 'Domain: Audio Revision',
       timestamp: Date.now(),
-      durationSeconds: Math.round(audioData.length / 16000),
+      durationSeconds: Math.round(audioBuffer.length / 16000),
       transcript: transcriptText,
       summary: structuredAnalysis.summary || 'Summary generated from audio.',
       keyTerms: structuredAnalysis.keyTerms || ['AZ-900'],
@@ -1383,7 +1602,7 @@ Return a valid JSON object with:
   } catch (error: any) {
     console.error('Transcription error:', error);
     res.status(500).json({
-      error: 'Audio transcription failed. Please verify audio quality.',
+      error: 'Audio transcription failed. Please verify audio quality and API key.',
       details: error?.message || String(error)
     });
   }
@@ -1413,55 +1632,25 @@ app.delete('/api/transcripts/:id', (req, res) => {
 // 8. POST AI Study Buddy & Concept Explainer
 app.post('/api/ai/ask', async (req, res) => {
   try {
-    const { question, conversationHistory } = req.body;
+    const { question, conversationHistory, language } = req.body;
 
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'Question is required' });
     }
 
-    const systemInstruction = `You are "AzureVibe AI Coach" — a charismatic, world-class Microsoft Certified Azure Trainer helping developers in the #1MillionDevs Movement pass the AZ-900 exam with flying colors!
+    const systemInstruction = getSystemPrompt(language || 'english');
 
-Tone & Rules:
-1. Warm, encouraging, crystal-clear, and structured.
-2. ALWAYS use relatable, concrete real-world analogies (e.g. comparing elasticity to ride-hailing/Uber fleets, CapEx vs OpEx to owning a car vs riding an e-scooter/Uber, high availability to dual power generators in hospitals, shared responsibility to renting an unfurnished apartment, M-Pesa or mobile money scaling).
-3. Clearly state WHICH AZ-900 official domain this question falls under:
-   - Domain 1: Cloud Concepts
-   - Domain 2: Azure Architecture & Services
-   - Domain 3: Azure Management & Governance
-4. Give a "⚠️ Common Exam Trap" warning so students don't get tricked on the actual exam.
-5. Provide a memorable 1-sentence mnemonic or mental model.
-6. Format clearly with markdown headers, bullet points, and bold keywords.`;
-
-    const contents: any[] = [];
-    if (Array.isArray(conversationHistory)) {
-      conversationHistory.slice(-6).forEach((msg: { role: 'user' | 'model'; text: string }) => {
-        contents.push({
-          role: msg.role === 'model' ? 'model' : 'user',
-          parts: [{ text: msg.text }]
-        });
-      });
-    }
-
-    contents.push({
-      role: 'user',
-      parts: [{ text: question }]
+    const reply = await callAICompletion({
+      systemPrompt: systemInstruction,
+      userPrompt: question,
+      conversationHistory: Array.isArray(conversationHistory) ? conversationHistory : []
     });
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents,
-      config: {
-        systemInstruction,
-        temperature: 0.7,
-      }
-    });
-
-    const reply = response.text || 'Sorry, I could not generate an answer right now.';
-    res.json({ success: true, answer: reply });
+    res.json({ success: true, answer: reply || 'Sorry, I could not generate an answer right now.' });
   } catch (err: any) {
     console.error('AI Ask error:', err);
     res.status(500).json({
-      error: 'AI Study Coach is currently unavailable. Please try again.',
+      error: 'AI Study Coach is currently unavailable. Please check your Groq API key.',
       details: err?.message || String(err)
     });
   }
@@ -1509,22 +1698,19 @@ Return in JSON format matching this schema:
   "officialLearnRef": "Microsoft Learn AZ-900 module"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      }
+    const jsonText = await callAICompletion({
+      systemPrompt: 'You are an expert Microsoft Certified Trainer for AZ-900. Respond with valid JSON only.',
+      userPrompt: prompt,
+      jsonMode: true
     });
 
-    if (!response.text) {
+    if (!jsonText) {
       throw new Error('Empty response from model');
     }
 
-    const generatedQuestion: Question = JSON.parse(response.text);
+    const generatedQuestion: Question = JSON.parse(jsonText);
     generatedQuestion.id = 'ai-gen-' + Date.now();
 
-    // Optionally append to DB question bank so user can revisit it
     const db = getDatabase();
     db.questions.push(generatedQuestion);
     saveDatabase(db);
@@ -1534,6 +1720,65 @@ Return in JSON format matching this schema:
     console.error('Generate Question error:', err);
     res.status(500).json({
       error: 'Failed to generate custom question',
+      details: err?.message || String(err)
+    });
+  }
+});
+
+// 10. POST Generate Custom High-Yield Flashcard on Weak Area
+app.post('/api/ai/generate-flashcard', async (req, res) => {
+  try {
+    const { topic, domain } = req.body;
+
+    const prompt = `Create 1 high-yield, memorable revision flashcard for the Microsoft Azure Fundamentals AZ-900 exam.
+Target Topic: ${topic || 'Availability Zones and SLAs'}
+Target Domain: ${domain || 'architecture'}
+
+Return in JSON format matching this schema:
+{
+  "domain": "${domain || 'architecture'}",
+  "term": "Exact Azure Term or Service",
+  "category": "Category name",
+  "summary": "Clear, concise 1-2 sentence definition",
+  "keyTakeaway": "Crucial exam fact",
+  "analogy": "Relatable real-world African/daily life analogy",
+  "commonExamTrap": "The exact trap or trick Microsoft uses on the exam regarding this concept"
+}`;
+
+    const jsonText = await callAICompletion({
+      systemPrompt: 'You are an AZ-900 exam preparation specialist. Respond with valid JSON only.',
+      userPrompt: prompt,
+      jsonMode: true
+    });
+
+    if (!jsonText) {
+      throw new Error('Empty response from model');
+    }
+
+    const parsed = JSON.parse(jsonText);
+    const newCard: Flashcard = {
+      id: 'fc-ai-' + Date.now(),
+      domain: parsed.domain || domain || 'concepts',
+      term: parsed.term || topic || 'Azure Concept',
+      category: parsed.category || 'AI Generated Revision',
+      summary: parsed.summary || 'Summary',
+      keyTakeaway: parsed.keyTakeaway || 'Key takeaway',
+      analogy: parsed.analogy || 'Everyday analogy',
+      commonExamTrap: parsed.commonExamTrap || 'Exam trap warning',
+      status: 'needs_practice',
+      lastReviewed: Date.now()
+    };
+
+    const db = getDatabase();
+    db.flashcards.unshift(newCard);
+    db.userStats.xp += 20;
+    saveDatabase(db);
+
+    res.json({ success: true, card: newCard });
+  } catch (err: any) {
+    console.error('Generate Flashcard error:', err);
+    res.status(500).json({
+      error: 'Failed to generate flashcard',
       details: err?.message || String(err)
     });
   }
