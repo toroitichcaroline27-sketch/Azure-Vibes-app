@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { DashboardView } from './components/DashboardView';
@@ -8,15 +9,27 @@ import { AudioTranscriberView } from './components/AudioTranscriberView';
 import { StudyPlannerView } from './components/StudyPlannerView';
 import { Footer } from './components/Footer';
 import { UserProgress, AZDomain } from './types';
+import TopicSelectionPage from './pages/TopicSelectionPage';
+import type { AZTopic } from './data/topics';
+
+type AppTab =
+  | 'dashboard'
+  | 'topics'
+  | 'quiz'
+  | 'flashcards'
+  | 'ai-coach'
+  | 'transcripts'
+  | 'planner';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'quiz' | 'flashcards' | 'ai-coach' | 'transcripts' | 'planner'>('dashboard');
+  const [activeTab, setActiveTab] = useState<AppTab>('dashboard');
   const [progress, setProgress] = useState<UserProgress | null>(null);
 
   // Cross-component handoff states
   const [quizDomain, setQuizDomain] = useState<'all' | AZDomain>('all');
   const [quizFilter, setQuizFilter] = useState<string>('all');
   const [aiPrompt, setAiPrompt] = useState<string>('');
+  const [quizTopic, setQuizTopic] = useState<AZTopic | null>(null);
 
   useEffect(() => {
     fetchProgress();
@@ -26,6 +39,7 @@ export default function App() {
     try {
       const res = await fetch('/api/progress');
       const data = await res.json();
+
       if (data.success && data.progress) {
         setProgress(data.progress);
       }
@@ -34,14 +48,30 @@ export default function App() {
     }
   };
 
-  const handleStartQuiz = (domain: 'all' | AZDomain = 'all', filter: string = 'all') => {
+  // Start a regular quiz from the dashboard or another feature.
+  const handleStartQuiz = (
+    domain: 'all' | AZDomain = 'all',
+    filter: string = 'all'
+  ) => {
+    setQuizTopic(null);
     setQuizDomain(domain);
     setQuizFilter(filter);
     setActiveTab('quiz');
   };
 
+  // Start a quiz for the topic selected on the topic-selection page.
+  const handleSelectTopic = (topic: AZTopic) => {
+    setQuizTopic(topic);
+    setQuizDomain(topic.domain);
+    setQuizFilter('all');
+    setActiveTab('quiz');
+  };
+
   const handleAskAI = (prompt?: string) => {
-    if (prompt) setAiPrompt(prompt);
+    if (prompt) {
+      setAiPrompt(prompt);
+    }
+
     setActiveTab('ai-coach');
   };
 
@@ -54,8 +84,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#070d18] text-slate-100 selection:bg-sky-500 selection:text-slate-950">
-      {/* Navigation Header */}
+    <div className="min-h-screen flex flex-col bg-[#f7faf7] text-[#173b2a] selection:bg-green-200 selection:text-green-950">
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -63,7 +92,6 @@ export default function App() {
         onQuickQuiz={() => handleStartQuiz('all')}
       />
 
-      {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {activeTab === 'dashboard' && (
           <DashboardView
@@ -75,10 +103,18 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'topics' && (
+          <TopicSelectionPage
+            onSelectTopic={handleSelectTopic}
+            onBack={() => setActiveTab('dashboard')}
+          />
+        )}
+
         {activeTab === 'quiz' && (
           <QuizView
             initialDomain={quizDomain}
             initialFilter={quizFilter}
+            initialTopic={quizTopic}
             onQuizComplete={handleQuizComplete}
             onAskAI={handleAskAI}
           />
@@ -111,7 +147,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer with Unofficial Disclaimer */}
       <Footer />
     </div>
   );

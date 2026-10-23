@@ -17,10 +17,12 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Question, AZDomain, UserProgress } from '../types';
+import type { AZTopic } from '../data/topics';
 import { fireCelebrationConfetti, fireMegaConfetti } from '../utils/confetti';
 
 interface QuizViewProps {
   initialDomain?: 'all' | AZDomain;
+  initialTopic?: AZTopic | null;
   initialFilter?: string;
   onQuizComplete: (attempt: any) => void;
   onAskAI: (prompt: string) => void;
@@ -28,11 +30,13 @@ interface QuizViewProps {
 
 export const QuizView: React.FC<QuizViewProps> = ({
   initialDomain = 'all',
+  initialTopic = null,
   initialFilter = 'all',
   onQuizComplete,
   onAskAI
 }) => {
   const [selectedDomain, setSelectedDomain] = useState<'all' | AZDomain>(initialDomain);
+  const [selectedTopic, setSelectedTopic] = useState<AZTopic | null>(initialTopic);
   const [activeFilter, setActiveFilter] = useState<string>(initialFilter);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -58,7 +62,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
   // Load questions when filter or domain changes
   useEffect(() => {
     fetchQuestions();
-  }, [selectedDomain, activeFilter]);
+  }, [selectedDomain, activeFilter, selectedTopic]);
 
   // Timer countdown
   useEffect(() => {
@@ -79,17 +83,32 @@ export const QuizView: React.FC<QuizViewProps> = ({
   const fetchQuestions = async () => {
     setLoading(true);
     try {
-      let url = `/api/questions?domain=${selectedDomain}`;
+      const params = new URLSearchParams({ domain: selectedDomain });
+      if (selectedTopic?.questionTopics.length) {
+        params.set("topics", selectedTopic.questionTopics.join(","));
+      }
       if (activeFilter === 'weak-areas') {
-        url += '&filter=weak-areas';
+        params.set('filter', 'weak-areas');
       }
       if (isMockExam) {
-        url += '&limit=20';
+        params.set('limit', '20');
       }
-      const res = await fetch(url);
+      const res = await fetch(`/api/questions?${params.toString()}`);
       const data = await res.json();
       if (data.success && data.questions) {
-        setQuestions(data.questions);
+        // Shuffle each question's complete option objects once when loaded.
+        const shuffledQuestions: Question[] = data.questions.map((question: Question) => {
+          const options = [...question.options];
+
+          for (let i = options.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [options[i], options[j]] = [options[j], options[i]];
+          }
+
+          return { ...question, options };
+        });
+
+        setQuestions(shuffledQuestions);
         setCurrentIndex(0);
         setSelectedOptionId(null);
         setShowExplanation(false);
@@ -435,7 +454,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
           {/* Options Grid */}
           <div className="space-y-3">
-            {currentQ.options.map((opt) => {
+            {currentQ.options.map((opt, optionIndex) => {
               const isSelected = selectedOptionId === opt.id;
               const hasAnswered = selectedOptionId !== null;
               const isCorrectOpt = opt.isCorrect;
@@ -472,7 +491,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
                     ) : hasAnswered && isSelected && !isCorrectOpt ? (
                       <XCircle className="w-4 h-4 text-white" />
                     ) : (
-                      opt.id.replace('opt-', '').toUpperCase()
+                      (['A', 'B', 'C', 'D'][optionIndex] ?? String(optionIndex + 1))
                     )}
                   </span>
                   <div className="flex-1 text-sm sm:text-base leading-snug">

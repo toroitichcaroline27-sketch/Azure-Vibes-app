@@ -1,47 +1,125 @@
-@import "tailwindcss";
-
+@import "tailwindcss";/* AzureVibe: clean green-and-white learning interface */
 @layer base {
+  :root {
+    color-scheme: light;
+
+    --page-bg: #f7faf7;
+    --surface: #ffffff;
+    --surface-muted: #edf5ee;
+    --text-primary: #173b2a;
+    --text-secondary: #587061;
+    --border: #dce9de;
+
+    --azure-blue: #15803d;
+    --azure-blue-hover: #166534;
+    --azure-cyan: #16a34a;
+
+    --success: #15803d;
+    --warning: #b96a08;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    scroll-behavior: smooth;
+    background-color: var(--page-bg);
+  }
+
   body {
-    background-color: #070d18;
-    color: #f1f5f9;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    min-height: 100vh;
     overflow-x: hidden;
+    background-color: var(--page-bg);
+    color: var(--text-primary);
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #root {
+    min-height: 100vh;
+    background-color: var(--page-bg);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  a {
+    color: var(--azure-blue);
+  }
+
+  ::selection {
+    background: #bbf7d0;
+    color: #14532d;
   }
 }
 
-/* Glassmorphism and Card Glows */
+/* White surfaces */
 .azure-glass {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(56, 189, 248, 0.12);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgb(22 101 52 / 4%);
 }
 
 .azure-glass-card {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 3px 12px rgb(22 101 52 / 5%);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
 .azure-glass-card:hover {
-  border-color: rgba(56, 189, 248, 0.35);
-  box-shadow: 0 10px 30px -10px rgba(14, 165, 233, 0.2);
+  border-color: #86c99a;
+  box-shadow: 0 8px 22px rgb(22 101 52 / 10%);
+  transform: translateY(-2px);
 }
 
+/* Green accents */
 .azure-glow-blue {
-  box-shadow: 0 0 25px -5px rgba(14, 165, 233, 0.35);
+  box-shadow: 0 4px 16px rgb(21 128 61 / 15%);
 }
 
 .azure-glow-emerald {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 4px 16px rgb(22 163 74 / 12%);
 }
 
 .azure-glow-amber {
-  box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 16px rgb(185 106 8 / 12%);
 }
 
-/* 3D Flashcard Flip utilities */
+/* Primary buttons */
+.azure-primary-button {
+  background: var(--azure-blue);
+  color: #ffffff;
+  border: 1px solid var(--azure-blue);
+  border-radius: 10px;
+  transition: background-color 180ms ease;
+}
+
+.azure-primary-button:hover {
+  background: var(--azure-blue-hover);
+}
+
+.azure-focus:focus-visible {
+  outline: 3px solid #86c99a;
+  outline-offset: 3px;
+}
+
+/* 3D flashcard flip utilities */
 .perspective-1000 {
   perspective: 1000px;
 }
@@ -59,21 +137,38 @@
   transform: rotateY(180deg);
 }
 
-/* Custom scrollbars */
+/* Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #a7cbb0 #edf5ee;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #edf5ee;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #a7cbb0;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #0284c7;
+  background: #5b9d6b;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

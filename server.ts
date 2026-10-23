@@ -1018,7 +1018,7 @@ app.get('/api/progress', (req, res) => {
 // 2. GET Questions with filters
 app.get('/api/questions', (req, res) => {
   const db = getDatabase();
-  const { domain, filter, limit } = req.query;
+  const { domain, filter, limit, topics } = req.query;
 
   let filtered = [...db.questions];
 
@@ -1033,6 +1033,13 @@ app.get('/api/questions', (req, res) => {
     if (filtered.length === 0) {
       filtered = [...db.questions];
     }
+  }
+
+  if (topics) {
+    const requestedTopics = new Set(
+      String(topics).split(",").map(topic => topic.trim()).filter(Boolean)
+    );
+    filtered = filtered.filter(q => requestedTopics.has(q.topic));
   }
 
   // Shuffle order slightly for variety

@@ -1,22 +1,27 @@
 import React from 'react';
-import { 
-  Cloud, 
-  Flame, 
-  Zap, 
-  Compass, 
-  CheckCircle2, 
-  Layers, 
-  Bot, 
-  Mic, 
-  Calendar, 
+import {
+  Cloud,
+  Flame,
+  Zap,
+  Compass,
+  CheckCircle2,
+  BookOpen,
   Sparkles,
-  Award
 } from 'lucide-react';
 import { UserProgress } from '../types';
 
+type HeaderTab =
+  | 'dashboard'
+  | 'topics'
+  | 'quiz'
+  | 'flashcards'
+  | 'ai-coach'
+  | 'transcripts'
+  | 'planner';
+
 interface HeaderProps {
-  activeTab: 'dashboard' | 'quiz' | 'flashcards' | 'ai-coach' | 'transcripts' | 'planner';
-  setActiveTab: (tab: 'dashboard' | 'quiz' | 'flashcards' | 'ai-coach' | 'transcripts' | 'planner') => void;
+  activeTab: HeaderTab;
+  setActiveTab: (tab: HeaderTab) => void;
   progress: UserProgress | null;
   onQuickQuiz: () => void;
 }
@@ -25,225 +30,131 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
   progress,
-  onQuickQuiz
+  onQuickQuiz,
 }) => {
-  const readiness = progress?.overallReadiness ?? 65;
-  const streak = progress?.streakDays ?? 1;
-  const xp = progress?.xp ?? 250;
+  const readiness = progress?.overallReadiness ?? 0;
+  const streak = progress?.streakDays ?? 0;
+  const xp = progress?.xp ?? 0;
 
-  const getReadinessColor = (val: number) => {
-    if (val >= 80) return 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
-    if (val >= 60) return 'text-sky-400 border-sky-500/30 bg-sky-500/10';
-    return 'text-amber-400 border-amber-500/30 bg-amber-500/10';
-  };
-
-  const getReadinessLabel = (val: number) => {
-    if (val >= 85) return 'Exam Ready 🚀';
-    if (val >= 70) return 'Strong Pace ⚡';
-    if (val >= 50) return 'Building Base 📈';
-    return 'Groundwork 🌱';
-  };
+  const navButtonClass = (tab: HeaderTab) =>
+    `flex items-center gap-2 whitespace-nowrap rounded-lg border px-3.5 py-2 text-sm font-semibold transition-colors ${
+      activeTab === tab
+        ? 'border-green-200 bg-green-50 text-green-800'
+        : 'border-transparent text-stone-600 hover:bg-green-50 hover:text-green-800'
+    }`;
 
   return (
-    <header className="sticky top-0 z-40 w-full azure-glass border-b border-slate-800/80">
-      {/* Top Movement & Disclaimer Ribbon */}
-      <div className="bg-gradient-to-r from-sky-950/80 via-slate-900/90 to-indigo-950/80 border-b border-sky-900/30 px-4 py-1.5 text-xs">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-slate-400">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              <Sparkles className="w-3 h-3 text-emerald-300" />
-              #1MillionDevs Movement
-            </span>
-            <span className="hidden sm:inline text-slate-500">|</span>
-            <span className="hidden sm:inline text-slate-300 font-medium">
-              AZ-900 Microsoft Azure Fundamentals Accelerator
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3 text-[11px]">
-            <span className="text-slate-400">
-              Official MS Learn Syllabus: <strong>Cloud Concepts</strong>, <strong>Architecture</strong> & <strong>Governance</strong>
-            </span>
-            <span className="hidden md:inline px-2 py-0.5 rounded bg-slate-800/80 text-slate-400 border border-slate-700/50">
-              Unofficial Study Tool
-            </span>
-          </div>
+    <header className="sticky top-0 z-40 w-full border-b border-green-100 bg-white/95 backdrop-blur-xl">
+      <div className="border-b border-green-100 bg-green-50/70 px-4 py-2">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <span className="flex items-center gap-2 text-xs font-medium text-stone-600">
+            <Sparkles className="h-3.5 w-3.5 text-green-700" />
+            AZ-900 Microsoft Azure Fundamentals
+          </span>
+          <span className="text-[10px] text-stone-500 sm:text-xs">
+            Unofficial study tool
+          </span>
         </div>
       </div>
 
-      {/* Main Header Row */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
-        {/* Logo and Brand */}
-        <div 
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <button
+          type="button"
           onClick={() => setActiveTab('dashboard')}
-          className="flex items-center gap-3 cursor-pointer group select-none"
+          className="group flex items-center gap-3 text-left"
+          aria-label="Go to dashboard"
         >
-          <div className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-tr from-sky-600 via-sky-500 to-cyan-400 p-0.5 shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-all">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <Cloud className="w-6 h-6 text-sky-400 group-hover:scale-110 transition-transform" />
-            </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100 ring-1 ring-green-200">
+            <Cloud className="h-6 w-6 text-green-800 transition-transform group-hover:scale-110" />
           </div>
+
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-sky-200 to-cyan-400 bg-clip-text text-transparent">
+              <span className="text-xl font-extrabold tracking-tight text-green-950">
                 AzureVibe
               </span>
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-bold tracking-wider uppercase bg-sky-500/20 text-sky-300 border border-sky-400/30">
+              <span className="rounded-md border border-green-200 bg-green-50 px-1.5 py-0.5 text-[10px] font-bold text-green-800">
                 AZ-900
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
-              Gamified Cloud Cert Prep & AI Coach
+            <p className="text-xs text-stone-600">
+              Practise. Learn. Get exam-ready.
             </p>
           </div>
-        </div>
+        </button>
 
-        {/* Gamified Live Stats (Readiness, Streak, XP) */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Readiness Score Badge */}
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${getReadinessColor(readiness)}`}>
-            <div className="relative w-8 h-8 flex items-center justify-center">
-              <svg className="w-8 h-8 -rotate-90">
-                <circle
-                  cx="16"
-                  cy="16"
-                  r="13"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  fill="transparent"
-                  className="opacity-20"
-                />
-                <circle
-                  cx="16"
-                  cy="16"
-                  r="13"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  fill="transparent"
-                  strokeDasharray={81.68}
-                  strokeDashoffset={81.68 - (81.68 * readiness) / 100}
-                  strokeLinecap="round"
-                  className="transition-all duration-700"
-                />
-              </svg>
-              <span className="absolute text-[11px] font-bold">{readiness}%</span>
-            </div>
-            <div className="hidden sm:block text-left">
-              <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 leading-none">
-                Readiness
-              </div>
-              <div className="text-xs font-bold leading-tight">
-                {getReadinessLabel(readiness)}
-              </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 rounded-xl border border-green-100 bg-green-50/70 px-3 py-2">
+            <div className="h-2 w-2 rounded-full bg-green-600" />
+            <div>
+              <p className="text-[10px] text-stone-500">Readiness</p>
+              <p className="text-sm font-bold text-green-800">
+                {readiness}%
+              </p>
             </div>
           </div>
 
-          {/* Streak Counter */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-amber-400 text-xs font-bold shadow-inner">
-            <Flame className="w-4 h-4 fill-amber-500 text-amber-500 animate-pulse" />
-            <span>{streak}d</span>
-            <span className="text-[10px] text-slate-500 hidden sm:inline uppercase">Streak</span>
+          <div className="flex items-center gap-2 rounded-xl border border-green-100 bg-white px-3 py-2">
+            <Flame className="h-4 w-4 text-amber-500" />
+            <div>
+              <p className="text-[10px] text-stone-500">Streak</p>
+              <p className="text-sm font-bold text-green-950">
+                {streak} days
+              </p>
+            </div>
           </div>
 
-          {/* XP Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-cyan-300 text-xs font-bold">
-            <Zap className="w-4 h-4 text-cyan-400" />
-            <span>{xp}</span>
-            <span className="text-[10px] text-slate-500 hidden sm:inline uppercase">XP</span>
+          <div className="flex items-center gap-2 rounded-xl border border-green-100 bg-white px-3 py-2">
+            <Zap className="h-4 w-4 text-lime-700" />
+            <div>
+              <p className="text-[10px] text-stone-500">Experience</p>
+              <p className="text-sm font-bold text-green-950">
+                {xp} XP
+              </p>
+            </div>
           </div>
 
-          {/* Fast Quiz CTA Button */}
           <button
+            type="button"
             onClick={onQuickQuiz}
-            className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-slate-950 font-bold text-xs shadow-md shadow-sky-500/20 hover:shadow-sky-500/40 active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-2 rounded-xl bg-green-700 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-green-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700"
           >
-            <Compass className="w-3.5 h-3.5" />
-            <span>Quick Practice</span>
+            <CheckCircle2 className="h-4 w-4" />
+            Start Quiz
           </button>
         </div>
       </div>
 
-      {/* Navigation Tabs Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <nav className="flex space-x-1 sm:space-x-2 overflow-x-auto pb-2 scrollbar-none">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <nav
+          aria-label="Main navigation"
+          className="flex gap-2 overflow-x-auto pb-3"
+        >
           <button
+            type="button"
             onClick={() => setActiveTab('dashboard')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'dashboard'
-                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm shadow-sky-500/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
+            className={navButtonClass('dashboard')}
           >
-            <Compass className="w-4 h-4" />
-            <span>Dashboard & Readiness</span>
+            <Compass className="h-4 w-4" />
+            <span>Dashboard</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('quiz')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'quiz'
-                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm shadow-sky-500/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
+            type="button"
+            onClick={() => setActiveTab('topics')}
+            className={navButtonClass('topics')}
           >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Smart Quiz & Deep Why</span>
+            <BookOpen className="h-4 w-4" />
+            <span>Study Topics</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('flashcards')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'flashcards'
-                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm shadow-sky-500/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
+            type="button"
+            onClick={onQuickQuiz}
+            className={navButtonClass('quiz')}
           >
-            <Layers className="w-4 h-4" />
-            <span>Flashcard Coach</span>
-            {progress?.flashcards?.needsPractice ? (
-              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-300 font-bold">
-                {progress.flashcards.needsPractice}
-              </span>
-            ) : null}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('ai-coach')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'ai-coach'
-                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm shadow-sky-500/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
-          >
-            <Bot className="w-4 h-4 text-cyan-400" />
-            <span>AI Study Buddy</span>
-            <span className="px-1 py-0.2 rounded text-[9px] bg-cyan-500/20 text-cyan-300 font-bold">
-              Gemini
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('transcripts')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'transcripts'
-                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm shadow-sky-500/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
-          >
-            <Mic className="w-4 h-4 text-rose-400" />
-            <span>Audio Transcripts & Word Export</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('planner')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'planner'
-                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm shadow-sky-500/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
-          >
-            <Calendar className="w-4 h-4 text-emerald-400" />
-            <span>Study Planner</span>
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Practise Quiz</span>
           </button>
         </nav>
       </div>

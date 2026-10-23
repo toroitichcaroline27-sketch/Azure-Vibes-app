@@ -1,19 +1,16 @@
 import React from 'react';
-import { 
-  CheckCircle2, 
-  AlertTriangle, 
-  Compass, 
-  Layers, 
-  Sparkles, 
-  ArrowRight, 
-  Flame, 
-  Zap, 
-  ShieldCheck, 
-  Server, 
-  Database,
-  BarChart3,
-  Bot,
-  Timer
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  Cloud,
+  Flame,
+  Server,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  Trophy,
+  Zap,
 } from 'lucide-react';
 import { UserProgress, AZDomain } from '../types';
 
@@ -25,447 +22,290 @@ interface DashboardViewProps {
   onOpenPlanner: () => void;
 }
 
+const domains: {
+  id: AZDomain;
+  title: string;
+  description: string;
+  weight: string;
+  scoreKey: 'concepts' | 'architecture' | 'management';
+  Icon: React.ElementType;
+  accent: string;
+  iconBg: string;
+  bar: string;
+  border: string;
+}[] = [
+  {
+    id: 'concepts',
+    title: 'Cloud Concepts',
+    description: 'Understand cloud computing, its benefits, and service models.',
+    weight: '25–30% of exam',
+    scoreKey: 'concepts',
+    Icon: Cloud,
+    accent: 'text-emerald-700',
+    iconBg: 'bg-emerald-100',
+    bar: 'bg-emerald-500',
+    border: 'hover:border-emerald-400',
+  },
+  {
+    id: 'architecture',
+    title: 'Azure Architecture and Services',
+    description: 'Explore Azure infrastructure, compute, networking, and storage.',
+    weight: '35–40% of exam',
+    scoreKey: 'architecture',
+    Icon: Server,
+    accent: 'text-green-700',
+    iconBg: 'bg-green-100',
+    bar: 'bg-green-600',
+    border: 'hover:border-green-400',
+  },
+  {
+    id: 'management',
+    title: 'Management and Governance',
+    description: 'Learn about security, identity, compliance, and cost management.',
+    weight: '30–35% of exam',
+    scoreKey: 'management',
+    Icon: ShieldCheck,
+    accent: 'text-lime-800',
+    iconBg: 'bg-lime-100',
+    bar: 'bg-lime-600',
+    border: 'hover:border-lime-400',
+  },
+];
+
+const clampScore = (value: number) =>
+  Math.min(100, Math.max(0, Number.isFinite(value) ? value : 0));
+
 export const DashboardView: React.FC<DashboardViewProps> = ({
   progress,
   onStartQuiz,
-  onOpenFlashcards,
-  onAskAI,
-  onOpenPlanner
 }) => {
-  const readiness = progress?.overallReadiness ?? 65;
-  const domainScores = progress?.domainScores ?? { concepts: 65, architecture: 60, management: 55 };
-  const weakAreas = progress?.weakAreas ?? [];
+  const readiness = clampScore(progress?.overallReadiness ?? 0);
+  const streak = progress?.streakDays ?? 0;
+  const xp = progress?.xp ?? 0;
 
   return (
-    <div className="space-y-8 animate-fadeIn">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-950 via-slate-900 to-indigo-950 border border-sky-800/40 p-6 sm:p-8 shadow-xl">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-40 -mb-10 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+    <main className="min-h-screen bg-[#f6faf6] px-4 py-7 text-[#173b2a] sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-8">
+        <section className="relative isolate overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#164b32] via-[#176640] to-[#27844e] px-6 py-8 shadow-xl shadow-emerald-950/10 sm:px-10 sm:py-10 lg:px-12">
+          <div className="pointer-events-none absolute -right-16 -top-24 -z-10 h-72 w-72 rounded-full border-[40px] border-white/5" />
+          <div className="pointer-events-none absolute -bottom-32 right-32 -z-10 h-64 w-64 rounded-full bg-lime-300/10 blur-3xl" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-sky-500/15 text-sky-300 border border-sky-400/30">
-              <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-              #1MillionDevs Movement · AZ-900 Certification Accelerator
+          <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
+            <div className="max-w-2xl">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-semibold text-green-50">
+                <Sparkles className="h-4 w-4 text-lime-300" />
+                Your AZ-900 learning space
+              </div>
+
+              <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
+                Build your Azure knowledge.
+                <span className="block text-lime-300">One question at a time.</span>
+              </h1>
+
+              <p className="mt-4 max-w-xl text-sm leading-6 text-green-50/85 sm:text-base">
+                Practise exam-style questions, strengthen your weak areas, and
+                track your progress toward Microsoft Azure Fundamentals.
+              </p>
+
+              <div className="mt-7 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => onStartQuiz('all')}
+                  className="group inline-flex items-center gap-2 rounded-xl bg-lime-300 px-5 py-3 font-bold text-green-950 shadow-lg shadow-green-950/10 transition hover:-translate-y-0.5 hover:bg-lime-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-green-800"
+                >
+                  <CheckCircle2 className="h-5 w-5" />
+                  Start practising
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onStartQuiz('all', 'mock-exam')}
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white"
+                >
+                  <Target className="h-5 w-5" />
+                  Mock exam
+                </button>
+              </div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Master the Microsoft Azure Fundamentals Exam
-            </h1>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Target passing score is <span className="text-emerald-400 font-bold">700 / 1000</span>. AzureVibe transforms abstract cloud architectures into memorable real-world mental models with deep explanations for every option.
-            </p>
 
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <button
-                onClick={() => onStartQuiz('all')}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-slate-950 font-bold text-sm shadow-lg shadow-sky-500/25 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <Compass className="w-4 h-4" />
-                <span>Start Smart Practice Quiz</span>
-              </button>
+            <div className="flex items-center justify-center lg:pr-5">
+              <div className="relative flex h-44 w-44 items-center justify-center rounded-full bg-white/10 p-3 ring-1 ring-white/20 sm:h-52 sm:w-52">
+                <div
+                  className="flex h-full w-full items-center justify-center rounded-full"
+                  style={{
+                    background: `conic-gradient(#d9f99d ${readiness * 3.6}deg, rgba(255,255,255,0.14) 0deg)`,
+                  }}
+                >
+                  <div className="flex h-[82%] w-[82%] flex-col items-center justify-center rounded-full bg-[#185c3a] text-center">
+                    <Trophy className="mb-2 h-6 w-6 text-lime-300" />
+                    <span className="text-4xl font-extrabold text-white">
+                      {readiness}%
+                    </span>
+                    <span className="mt-1 text-xs font-semibold text-green-100">
+                      Exam readiness
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-              <button
-                onClick={() => onStartQuiz('all', 'mock-exam')}
-                className="px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 border border-slate-700 font-semibold text-sm transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <Timer className="w-4 h-4 text-amber-400" />
-                <span>45-Min Mock Exam (Timed)</span>
-              </button>
-
-              <button
-                onClick={onOpenFlashcards}
-                className="px-4 py-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 border border-slate-700/60 font-semibold text-sm transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <Layers className="w-4 h-4 text-sky-400" />
-                <span>Flashcard Coach</span>
-              </button>
+        <section className="grid gap-4 sm:grid-cols-3">
+          <div className="flex items-center gap-4 rounded-2xl border border-green-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-100">
+              <Flame className="h-6 w-6 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-stone-500">Study streak</p>
+              <p className="mt-0.5 text-2xl font-extrabold text-[#173b2a]">
+                {streak} <span className="text-sm font-semibold text-stone-500">days</span>
+              </p>
             </div>
           </div>
 
-          {/* Large Readiness Score Gauge */}
-          <div className="azure-glass-card rounded-2xl p-5 border border-sky-500/20 flex flex-col items-center justify-center min-w-[240px] text-center">
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              Exam Readiness Score
+          <div className="flex items-center gap-4 rounded-2xl border border-green-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lime-100">
+              <Zap className="h-6 w-6 text-lime-700" />
             </div>
-            
-            <div className="relative w-32 h-32 flex items-center justify-center">
-              <svg className="w-32 h-32 -rotate-90">
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="52"
-                  stroke="#1e293b"
-                  strokeWidth="10"
-                  fill="transparent"
-                />
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="52"
-                  stroke={readiness >= 80 ? '#10b981' : readiness >= 60 ? '#0284c7' : '#f59e0b'}
-                  strokeWidth="10"
-                  fill="transparent"
-                  strokeDasharray={326.7}
-                  strokeDashoffset={326.7 - (326.7 * readiness) / 100}
-                  strokeLinecap="round"
-                  className="transition-all duration-1000 ease-out"
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center">
-                <span className="text-3xl font-black text-white">{readiness}%</span>
-                <span className="text-[10px] text-slate-400 font-medium">EST. SCORE</span>
-              </div>
-            </div>
-
-            <div className="mt-3">
-              <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                readiness >= 80 
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
-                  : readiness >= 60 
-                  ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40' 
-                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-              }`}>
-                {readiness >= 80 ? 'Exam Ready (700+ Projected)' : readiness >= 60 ? 'On Track to Pass' : 'Review Fundamentals'}
-              </span>
-            </div>
-            <div className="text-[11px] text-slate-400 mt-2">
-              Based on quiz accuracy, domain coverage & flashcards
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3 Official AZ-900 Domain Cards */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-sky-400" />
-              Official AZ-900 Domain Breakdown
-            </h2>
-            <p className="text-xs text-slate-400">
-              Evaluated against Microsoft's official exam weightings
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Domain 1: Cloud Concepts */}
-          <div className="azure-glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between hover:border-sky-500/40 transition-all">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
-                  <Database className="w-5 h-5" />
-                </div>
-                <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">
-                  25–30% Weight
-                </span>
-              </div>
-
-              <div>
-                <h3 className="text-base font-bold text-white">
-                  1. Cloud Concepts
-                </h3>
-                <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                  CapEx vs OpEx, IaaS / PaaS / SaaS, shared responsibility model, high availability, elasticity.
-                </p>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="space-y-1.5 pt-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Domain Mastery</span>
-                  <span className="font-bold text-sky-400">{domainScores.concepts}%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-all duration-700"
-                    style={{ width: `${domainScores.concepts}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 mt-4 border-t border-slate-800/80 flex items-center justify-between">
-              <button
-                onClick={() => onStartQuiz('concepts')}
-                className="text-xs font-semibold text-sky-400 hover:text-sky-300 flex items-center gap-1 group cursor-pointer"
-              >
-                <span>Practice Domain 1</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button
-                onClick={() => onAskAI('Explain Cloud Concepts CapEx vs OpEx and Shared Responsibility Model with simple analogies')}
-                className="text-xs text-slate-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer"
-                title="Ask AI Coach"
-              >
-                <Bot className="w-3.5 h-3.5" />
-                <span>AI Tutor</span>
-              </button>
+            <div>
+              <p className="text-sm font-medium text-stone-500">Experience earned</p>
+              <p className="mt-0.5 text-2xl font-extrabold text-[#173b2a]">
+                {xp} <span className="text-sm font-semibold text-stone-500">XP</span>
+              </p>
             </div>
           </div>
 
-          {/* Domain 2: Azure Architecture & Services */}
-          <div className="azure-glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between hover:border-emerald-500/40 transition-all">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <Server className="w-5 h-5" />
-                </div>
-                <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                  35–40% Weight
-                </span>
-              </div>
-
-              <div>
-                <h3 className="text-base font-bold text-white">
-                  2. Azure Architecture & Services
-                </h3>
-                <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                  Regions, Availability Zones, VMs, Containers, VNets, Blob Storage tiers, ExpressRoute vs VPN.
-                </p>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="space-y-1.5 pt-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Domain Mastery</span>
-                  <span className="font-bold text-emerald-400">{domainScores.architecture}%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700"
-                    style={{ width: `${domainScores.architecture}%` }}
-                  />
-                </div>
-              </div>
+          <div className="flex items-center gap-4 rounded-2xl border border-green-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100">
+              <BookOpen className="h-6 w-6 text-emerald-700" />
             </div>
-
-            <div className="pt-4 mt-4 border-t border-slate-800/80 flex items-center justify-between">
-              <button
-                onClick={() => onStartQuiz('architecture')}
-                className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 group cursor-pointer"
-              >
-                <span>Practice Domain 2</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button
-                onClick={() => onAskAI('Explain Azure Availability Zones, Region Pairs, and Blob Storage Tiers with simple analogies')}
-                className="text-xs text-slate-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer"
-                title="Ask AI Coach"
-              >
-                <Bot className="w-3.5 h-3.5" />
-                <span>AI Tutor</span>
-              </button>
+            <div>
+              <p className="text-sm font-medium text-stone-500">Study domains</p>
+              <p className="mt-0.5 text-2xl font-extrabold text-[#173b2a]">
+                3 <span className="text-sm font-semibold text-stone-500">exam areas</span>
+              </p>
             </div>
           </div>
+        </section>
 
-          {/* Domain 3: Azure Management & Governance */}
-          <div className="azure-glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between hover:border-indigo-500/40 transition-all">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-                  30–35% Weight
-                </span>
-              </div>
-
-              <div>
-                <h3 className="text-base font-bold text-white">
-                  3. Management & Governance
-                </h3>
-                <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                  Cost Management, TCO vs Pricing Calculator, Azure Policy, RBAC, Defender for Cloud, Service Health.
-                </p>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="space-y-1.5 pt-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Domain Mastery</span>
-                  <span className="font-bold text-indigo-400">{domainScores.management}%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-400 transition-all duration-700"
-                    style={{ width: `${domainScores.management}%` }}
-                  />
-                </div>
-              </div>
+        <section>
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">
+                Your learning path
+              </p>
+              <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[#173b2a] sm:text-3xl">
+                Choose a study domain
+              </h2>
+              <p className="mt-2 text-sm text-stone-600">
+                Focus on a topic or practise across the whole exam.
+              </p>
             </div>
 
-            <div className="pt-4 mt-4 border-t border-slate-800/80 flex items-center justify-between">
-              <button
-                onClick={() => onStartQuiz('management')}
-                className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 group cursor-pointer"
-              >
-                <span>Practice Domain 3</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button
-                onClick={() => onAskAI('Explain Azure Policy vs RBAC and Resource Locks with a relatable real-world story')}
-                className="text-xs text-slate-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer"
-                title="Ask AI Coach"
-              >
-                <Bot className="w-3.5 h-3.5" />
-                <span>AI Tutor</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Weak-Area Identification & Spaced Revision */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Weak Areas Card */}
-        <div className="azure-glass-card rounded-2xl p-6 border border-slate-800">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <AlertTriangle className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">
-                  Identified Weak Areas
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Targeted review to prevent common exam pitfalls
-                </p>
-              </div>
-            </div>
             <button
-              onClick={() => onStartQuiz('all', 'weak-areas')}
-              className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-colors cursor-pointer"
+              type="button"
+              onClick={() => onStartQuiz('all')}
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100"
             >
-              Drill All Weak Topics
+              All questions <ArrowRight className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="space-y-3">
-            {weakAreas.slice(0, 3).map((item, index) => (
-              <div
-                key={index}
-                className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/90 flex items-center justify-between gap-3 hover:border-slate-700 transition-colors"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-200">
-                      {item.topic}
-                    </span>
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-bold uppercase bg-slate-800 text-slate-400">
-                      {item.domain}
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-400 mt-1 flex items-center gap-2">
-                    <span>Accuracy: <strong className={item.accuracy < 60 ? 'text-rose-400' : 'text-amber-400'}>{item.accuracy}%</strong></span>
-                    {item.totalCount > 0 ? (
-                      <span>({item.missCount} missed out of {item.totalCount})</span>
-                    ) : (
-                      <span className="text-slate-500">Curriculum High-Yield Pitfall</span>
-                    )}
-                  </div>
-                </div>
+          <div className="grid gap-5 lg:grid-cols-3">
+            {domains.map((domain, index) => {
+              const score = clampScore(
+                progress?.domainScores?.[domain.scoreKey] ?? 0,
+              );
+              const Icon = domain.Icon;
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => onAskAI(`Explain ${item.topic} for the AZ-900 exam with a memorable analogy and why students get it wrong`)}
-                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-medium cursor-pointer"
-                    title="Explain with AI"
-                  >
-                    <Bot className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => onStartQuiz(item.domain)}
-                    className="p-2 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-medium cursor-pointer"
-                    title="Quiz Topic"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Gamification, Badges & Milestone Progress */}
-        <div className="azure-glass-card rounded-2xl p-6 border border-slate-800 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  <Zap className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">
-                    Study Momentum & Badges
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Your #1MillionDevs certification journey stats
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={onOpenPlanner}
-                className="text-xs text-sky-400 hover:text-sky-300 font-semibold cursor-pointer"
-              >
-                View Study Plan →
-              </button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 text-center">
-                <div className="text-xs text-slate-400 font-medium">Daily Streak</div>
-                <div className="text-xl font-bold text-amber-400 mt-1 flex items-center justify-center gap-1">
-                  <Flame className="w-4 h-4 fill-amber-500" />
-                  <span>{progress?.streakDays ?? 1} Days</span>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 text-center">
-                <div className="text-xs text-slate-400 font-medium">Total XP</div>
-                <div className="text-xl font-bold text-cyan-400 mt-1 flex items-center justify-center gap-1">
-                  <Zap className="w-4 h-4" />
-                  <span>{progress?.xp ?? 250}</span>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 text-center">
-                <div className="text-xs text-slate-400 font-medium">Flashcards</div>
-                <div className="text-xl font-bold text-emerald-400 mt-1 flex items-center justify-center gap-1">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{progress?.flashcards?.mastered ?? 0}/{progress?.flashcards?.total ?? 10}</span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                Unlocked Achievements
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(progress?.unlockedBadges || []).map((b) => (
+              return (
+                <article
+                  key={domain.id}
+                  className={`group relative overflow-hidden rounded-2xl border border-green-100 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg ${domain.border}`}
+                >
                   <div
-                    key={b.id}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs text-slate-200"
-                    title={b.description}
-                  >
-                    <span>{b.icon}</span>
-                    <span className="font-semibold">{b.name}</span>
+                    className={`pointer-events-none absolute inset-x-0 top-0 h-1 ${domain.bar}`}
+                  />
+
+                  <div className="flex items-start justify-between gap-3">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${domain.iconBg}`}>
+                      <Icon className={`h-6 w-6 ${domain.accent}`} />
+                    </div>
+                    <span className="rounded-full bg-stone-100 px-3 py-1.5 text-xs font-bold text-stone-600">
+                      {domain.weight}
+                    </span>
                   </div>
-                ))}
+
+                  <h3 className="mt-5 text-lg font-extrabold leading-snug text-[#173b2a]">
+                    {domain.title}
+                  </h3>
+                  <p className="mt-2 min-h-[48px] text-sm leading-6 text-stone-600">
+                    {domain.description}
+                  </p>
+
+                  <div className="mt-6">
+                    <div className="mb-2 flex items-center justify-between text-sm">
+                      <span className="font-medium text-stone-600">Your progress</span>
+                      <span className={`font-extrabold ${domain.accent}`}>{score}%</span>
+                    </div>
+                    <div
+                      className="h-2.5 overflow-hidden rounded-full bg-stone-100"
+                      role="progressbar"
+                      aria-label={`${domain.title} progress`}
+                      aria-valuenow={score}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    >
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${domain.bar}`}
+                        style={{ width: `${score}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onStartQuiz(domain.id)}
+                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 font-bold text-green-800 transition hover:border-green-600 hover:bg-green-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                  >
+                    Practise this domain
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-green-200 bg-gradient-to-r from-white via-green-50 to-lime-50 p-6 sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-700 text-white shadow-md shadow-green-900/15">
+                <Target className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-extrabold text-[#173b2a]">
+                  Ready to test what you know?
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-stone-600">
+                  Take a mixed practice quiz, check your answers, and use the
+                  results to decide what to revise next.
+                </p>
               </div>
             </div>
-          </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-800/80 text-xs text-slate-400 flex items-center justify-between">
-            <span>Next Goal: <strong>Mnemonic Master (Master 5 flashcards)</strong></span>
-            <span className="text-emerald-400 font-semibold">+50 XP</span>
+            <button
+              type="button"
+              onClick={() => onStartQuiz('all')}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-green-700 px-5 py-3 font-bold text-white shadow-md shadow-green-900/15 transition hover:-translate-y-0.5 hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2"
+            >
+              Start a quiz <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
