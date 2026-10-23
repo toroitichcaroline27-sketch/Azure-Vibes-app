@@ -200,7 +200,6 @@ export const QuizView: React.FC<QuizViewProps> = ({
       });
       const data = await res.json();
       if (data.success && data.question) {
-        // insert into current quiz set right next!
         setQuestions(prev => [
           ...prev.slice(0, currentIndex + 1),
           data.question,
@@ -226,9 +225,9 @@ export const QuizView: React.FC<QuizViewProps> = ({
   // If loading
   if (loading) {
     return (
-      <div className="azure-glass-card rounded-2xl p-12 text-center border border-slate-800">
-        <div className="animate-spin w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full mx-auto mb-4" />
-        <p className="text-slate-300 font-semibold">Loading official AZ-900 practice questions...</p>
+      <div className="bg-white rounded-2xl p-12 text-center border border-emerald-100 shadow-md max-w-2xl mx-auto my-8">
+        <div className="animate-spin w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full mx-auto mb-4" />
+        <p className="text-slate-900 font-bold text-base">Loading official AZ-900 practice questions...</p>
         <p className="text-slate-500 text-xs mt-1">Sourced from Microsoft Learn objectives</p>
       </div>
     );
@@ -240,19 +239,19 @@ export const QuizView: React.FC<QuizViewProps> = ({
     const isPassing = attempt.scorePercentage >= 70; // 700 / 1000
 
     return (
-      <div className="azure-glass-card rounded-2xl p-6 sm:p-10 border border-slate-800 max-w-3xl mx-auto text-center animate-fadeIn">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-tr from-sky-500/20 to-emerald-500/20 border border-sky-400/30 mb-4 shadow-xl">
+      <div className="bg-white rounded-2xl p-6 sm:p-10 border border-emerald-200 max-w-3xl mx-auto text-center shadow-xl animate-fadeIn">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-emerald-100 border border-emerald-300 mb-4 shadow-sm">
           {isPassing ? (
-            <Trophy className="w-10 h-10 text-amber-400 animate-bounce" />
+            <Trophy className="w-10 h-10 text-emerald-700 animate-bounce" />
           ) : (
-            <RotateCcw className="w-10 h-10 text-sky-400" />
+            <RotateCcw className="w-10 h-10 text-emerald-700" />
           )}
         </div>
 
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
-          {isPassing ? 'Congratulations! Passing Score Achieved' : 'Great Effort! Practice Solidifies Knowledge'}
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
+          {isPassing ? 'Congratulations! Passing Score Achieved 🎉' : 'Great Effort! Practice Solidifies Knowledge 📈'}
         </h2>
-        <p className="text-slate-300 text-sm mt-2 max-w-lg mx-auto">
+        <p className="text-slate-600 text-sm sm:text-base mt-2 max-w-lg mx-auto">
           {isPassing
             ? `You scored ${attempt.scorePercentage}% which clears the AZ-900 official 700/1000 passing threshold!`
             : `You scored ${attempt.scorePercentage}%. Review the "Why It's Wrong" breakdowns below to master tricky distractors.`}
@@ -260,66 +259,48 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
         {/* Score & XP Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-6">
-          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-            <div className="text-xs text-slate-400 font-medium">Final Score</div>
-            <div className={`text-2xl font-black mt-1 ${isPassing ? 'text-emerald-400' : 'text-amber-400'}`}>
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="text-xs text-slate-600 font-bold uppercase tracking-wider">Final Score</div>
+            <div className={`text-2xl font-black mt-1 ${isPassing ? 'text-emerald-700' : 'text-amber-600'}`}>
               {attempt.scorePercentage}%
             </div>
-            <div className="text-[10px] text-slate-500">{attempt.correctCount} / {attempt.totalQuestions} Correct</div>
+            <div className="text-xs text-slate-500 mt-0.5">{attempt.correctCount} / {attempt.totalQuestions} Correct</div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-            <div className="text-xs text-slate-400 font-medium">XP Earned</div>
-            <div className="text-2xl font-black text-cyan-400 mt-1 flex items-center justify-center gap-1">
-              <Zap className="w-5 h-5 fill-cyan-400" />
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="text-xs text-slate-600 font-bold uppercase tracking-wider">XP Earned</div>
+            <div className="text-2xl font-black text-emerald-700 mt-1 flex items-center justify-center gap-1">
+              <Zap className="w-5 h-5 fill-emerald-600 text-emerald-600" />
               <span>+{quizResultSummary.earnedXp}</span>
             </div>
-            <div className="text-[10px] text-slate-500">Speed & Accuracy Bonus</div>
+            <div className="text-xs text-slate-500 mt-0.5">Speed & Accuracy Bonus</div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-            <div className="text-xs text-slate-400 font-medium">Status</div>
-            <div className="text-base font-bold text-white mt-2">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="text-xs text-slate-600 font-bold uppercase tracking-wider">Status</div>
+            <div className={`text-base font-black mt-2 ${isPassing ? 'text-emerald-700' : 'text-amber-700'}`}>
               {isPassing ? 'PASSED 🚀' : 'NEEDS DRILL 📈'}
             </div>
-            <div className="text-[10px] text-slate-500">70% Required</div>
+            <div className="text-xs text-slate-500 mt-0.5">70% (700/1000) Target</div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-            <div className="text-xs text-slate-400 font-medium">Time Taken</div>
-            <div className="text-xl font-bold text-slate-200 mt-1.5">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="text-xs text-slate-600 font-bold uppercase tracking-wider">Time Taken</div>
+            <div className="text-xl font-black text-slate-900 mt-1.5">
               {Math.floor(attempt.timeSpentSeconds / 60)}m {attempt.timeSpentSeconds % 60}s
             </div>
-            <div className="text-[10px] text-slate-500">Total duration</div>
+            <div className="text-xs text-slate-500 mt-0.5">Total duration</div>
           </div>
         </div>
 
-        {/* New Badges if any */}
-        {quizResultSummary.newBadges && quizResultSummary.newBadges.length > 0 && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
-            <div className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              New Achievement Unlocked!
-            </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {quizResultSummary.newBadges.map((b: any) => (
-                <div key={b.id} className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/40 font-bold text-sm">
-                  <span>{b.icon}</span>
-                  <span>{b.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Action Buttons */}
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-slate-200">
           <button
             onClick={() => {
               setQuizFinished(false);
               fetchQuestions();
             }}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-slate-950 font-bold text-sm shadow-lg shadow-sky-500/25 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Retake Another Round</span>
@@ -330,9 +311,9 @@ export const QuizView: React.FC<QuizViewProps> = ({
               setSelectedDomain('all');
               setActiveFilter('weak-areas');
             }}
-            className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-all flex items-center gap-2 cursor-pointer"
+            className="px-5 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border-2 border-slate-300 transition-all flex items-center gap-2 cursor-pointer"
           >
-            <AlertCircle className="w-4 h-4 text-amber-400" />
+            <AlertCircle className="w-4 h-4 text-amber-600" />
             <span>Drill Missed Concepts</span>
           </button>
         </div>
@@ -342,50 +323,50 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
   // Active Question View
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto animate-fadeIn">
       {/* Top Filter & Domain Header */}
-      <div className="azure-glass rounded-xl p-3.5 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
         {/* Domain selection chips */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-slate-400 font-semibold mr-1 flex items-center gap-1">
-            <Filter className="w-3.5 h-3.5" /> Domain:
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <span className="text-xs text-slate-700 font-bold mr-1 flex items-center gap-1">
+            <Filter className="w-3.5 h-3.5 text-emerald-700" /> Domain:
           </span>
           <button
-            onClick={() => { setSelectedDomain('all'); setActiveFilter('all'); setIsMockExam(false); }}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
-              selectedDomain === 'all' && activeFilter !== 'weak-areas' && !isMockExam
-                ? 'bg-sky-500 text-slate-950 font-bold'
-                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+            onClick={() => { setSelectedDomain('all'); setSelectedTopic(null); setActiveFilter('all'); setIsMockExam(false); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+              selectedDomain === 'all' && activeFilter !== 'weak-areas' && !isMockExam && !selectedTopic
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200'
             }`}
           >
             All Domains
           </button>
           <button
-            onClick={() => { setSelectedDomain('concepts'); setActiveFilter('all'); setIsMockExam(false); }}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+            onClick={() => { setSelectedDomain('concepts'); setSelectedTopic(null); setActiveFilter('all'); setIsMockExam(false); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
               selectedDomain === 'concepts'
-                ? 'bg-sky-500 text-slate-950 font-bold'
-                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200'
             }`}
           >
             1. Cloud Concepts
           </button>
           <button
-            onClick={() => { setSelectedDomain('architecture'); setActiveFilter('all'); setIsMockExam(false); }}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+            onClick={() => { setSelectedDomain('architecture'); setSelectedTopic(null); setActiveFilter('all'); setIsMockExam(false); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
               selectedDomain === 'architecture'
-                ? 'bg-emerald-500 text-slate-950 font-bold'
-                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200'
             }`}
           >
             2. Architecture
           </button>
           <button
-            onClick={() => { setSelectedDomain('management'); setActiveFilter('all'); setIsMockExam(false); }}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+            onClick={() => { setSelectedDomain('management'); setSelectedTopic(null); setActiveFilter('all'); setIsMockExam(false); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
               selectedDomain === 'management'
-                ? 'bg-indigo-500 text-slate-950 font-bold'
-                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200'
             }`}
           >
             3. Governance
@@ -395,60 +376,56 @@ export const QuizView: React.FC<QuizViewProps> = ({
         {/* Right side: Mock Exam Timer or Progress */}
         <div className="flex items-center gap-3">
           {isMockExam ? (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold font-mono">
-              <Timer className="w-4 h-4 animate-spin-slow" />
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold font-mono shadow-xs">
+              <Timer className="w-4 h-4 text-amber-600 animate-spin-slow" />
               <span>{formatTimer(secondsRemaining)}</span>
             </div>
           ) : (
-            <div className="text-xs font-bold text-slate-400">
-              Question <span className="text-white font-extrabold">{currentIndex + 1}</span> of <span className="text-slate-500">{questions.length}</span>
+            <div className="text-xs font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+              Question <span className="text-emerald-800 font-extrabold text-sm">{currentIndex + 1}</span> of <span className="text-slate-600">{questions.length}</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+      <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-all duration-300"
+          className="h-full bg-emerald-600 transition-all duration-300"
           style={{ width: `${((currentIndex + 1) / Math.max(1, questions.length)) * 100}%` }}
         />
       </div>
 
       {currentQ && (
-        <div className="azure-glass-card rounded-2xl p-6 sm:p-8 border border-slate-800 shadow-2xl relative">
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-md relative">
           {/* Question Metadata Tags */}
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div className="flex items-center gap-2">
-              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${
-                currentQ.domain === 'concepts'
-                  ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30'
-                  : currentQ.domain === 'architecture'
-                  ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                  : 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
-              }`}>
+              <span className="px-3 py-1 rounded-lg text-xs font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300">
                 {currentQ.domainTitle}
               </span>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-600 font-bold">
                 · {currentQ.topic}
               </span>
             </div>
 
-            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+            <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 capitalize">
               Difficulty: {currentQ.difficulty}
             </span>
           </div>
 
           {/* Scenario Context if present */}
           {currentQ.scenario && (
-            <div className="mb-4 p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 leading-relaxed italic border-l-4 border-l-sky-500">
-              <strong className="text-sky-300 not-italic block mb-0.5">Business Scenario:</strong>
+            <div className="mb-5 p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 text-slate-800 text-xs sm:text-sm leading-relaxed border-l-4 border-l-emerald-600 shadow-xs">
+              <strong className="text-emerald-950 font-bold block mb-1 uppercase tracking-wide text-xs">
+                Business Scenario:
+              </strong>
               {currentQ.scenario}
             </div>
           )}
 
-          {/* Question Statement */}
-          <h2 className="text-lg sm:text-xl font-bold text-white leading-relaxed mb-6">
+          {/* Question Statement (High Contrast Black on White) */}
+          <h2 className="text-lg sm:text-2xl font-black text-slate-900 leading-snug mb-6">
             {currentQ.question}
           </h2>
 
@@ -459,22 +436,22 @@ export const QuizView: React.FC<QuizViewProps> = ({
               const hasAnswered = selectedOptionId !== null;
               const isCorrectOpt = opt.isCorrect;
 
-              let optionStyle = 'bg-slate-900/70 border-slate-800 text-slate-200 hover:border-slate-700 hover:bg-slate-800/60';
-              let badgeStyle = 'bg-slate-800 text-slate-400 border-slate-700';
+              let optionStyle = 'bg-white border-2 border-slate-200 text-slate-900 hover:border-emerald-600 hover:bg-emerald-50/40 shadow-xs';
+              let badgeStyle = 'bg-slate-100 text-slate-700 border border-slate-300 font-bold';
 
               if (hasAnswered) {
                 if (isCorrectOpt) {
-                  // Always show the correct option highlighted in emerald/green
-                  optionStyle = 'bg-emerald-500/15 border-emerald-500 text-emerald-200 shadow-sm shadow-emerald-500/20';
-                  badgeStyle = 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold';
+                  // Correct option: vibrant green
+                  optionStyle = 'bg-emerald-50 border-2 border-emerald-600 text-emerald-950 shadow-md ring-1 ring-emerald-500';
+                  badgeStyle = 'bg-emerald-600 text-white font-extrabold border-emerald-700';
                 } else if (isSelected && !isCorrectOpt) {
-                  // User chose this and it was wrong: highlight red
-                  optionStyle = 'bg-rose-500/15 border-rose-500 text-rose-200 shadow-sm shadow-rose-500/20';
-                  badgeStyle = 'bg-rose-500 text-white border-rose-400 font-bold';
+                  // User chose this and it was wrong: vibrant red
+                  optionStyle = 'bg-rose-50 border-2 border-rose-500 text-rose-950 shadow-md ring-1 ring-rose-400';
+                  badgeStyle = 'bg-rose-600 text-white font-extrabold border-rose-700';
                 } else {
                   // Unselected wrong options
-                  optionStyle = 'bg-slate-900/40 border-slate-800/60 text-slate-500 opacity-60';
-                  badgeStyle = 'bg-slate-900 text-slate-600 border-slate-800';
+                  optionStyle = 'bg-slate-50 border border-slate-200 text-slate-500 opacity-60';
+                  badgeStyle = 'bg-slate-100 text-slate-400 border-slate-200';
                 }
               }
 
@@ -483,18 +460,18 @@ export const QuizView: React.FC<QuizViewProps> = ({
                   key={opt.id}
                   disabled={hasAnswered}
                   onClick={() => handleSelectOption(opt.id)}
-                  className={`w-full p-4 rounded-xl border text-left transition-all duration-200 flex items-start gap-3 cursor-pointer ${optionStyle}`}
+                  className={`w-full p-4 rounded-xl text-left transition-all duration-200 flex items-start gap-3.5 cursor-pointer ${optionStyle}`}
                 >
-                  <span className={`w-7 h-7 rounded-lg border flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${badgeStyle}`}>
+                  <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs shrink-0 mt-0.5 ${badgeStyle}`}>
                     {hasAnswered && isCorrectOpt ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-950" />
+                      <CheckCircle2 className="w-5 h-5 text-white" />
                     ) : hasAnswered && isSelected && !isCorrectOpt ? (
-                      <XCircle className="w-4 h-4 text-white" />
+                      <XCircle className="w-5 h-5 text-white" />
                     ) : (
                       (['A', 'B', 'C', 'D'][optionIndex] ?? String(optionIndex + 1))
                     )}
                   </span>
-                  <div className="flex-1 text-sm sm:text-base leading-snug">
+                  <div className="flex-1 text-sm sm:text-base font-semibold leading-snug pt-0.5">
                     {opt.text}
                   </div>
                 </button>
@@ -504,54 +481,54 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
           {/* IMMEDIATE FEEDBACK & WHY IT'S RIGHT / WHY IT'S WRONG EXPLANATIONS */}
           {showExplanation && (
-            <div className="mt-8 pt-6 border-t border-slate-800/80 space-y-5 animate-fadeIn">
+            <div className="mt-8 pt-6 border-t border-slate-200 space-y-5 animate-fadeIn">
               {/* Correctness Banner */}
               <div className={`p-4 rounded-xl border flex items-center justify-between ${
                 selectedOptionId && currentQ.options.find(o => o.id === selectedOptionId)?.isCorrect
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                  : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                  : 'bg-rose-50 border-rose-300 text-rose-950'
               }`}>
                 <div className="flex items-center gap-2.5">
                   {selectedOptionId && currentQ.options.find(o => o.id === selectedOptionId)?.isCorrect ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
                   ) : (
-                    <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                    <XCircle className="w-5 h-5 text-rose-700 shrink-0" />
                   )}
-                  <span className="font-bold text-sm">
+                  <span className="font-extrabold text-sm sm:text-base">
                     {selectedOptionId && currentQ.options.find(o => o.id === selectedOptionId)?.isCorrect
                       ? 'Spot On! That is the correct Microsoft architectural choice.'
                       : 'Incorrect. Let\'s learn why the distractors are wrong.'}
                   </span>
                 </div>
-                <span className="text-xs font-bold px-2.5 py-1 rounded bg-slate-900/80 border border-slate-700 text-slate-300">
+                <span className="text-xs font-bold px-3 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 shadow-xs">
                   {selectedOptionId && currentQ.options.find(o => o.id === selectedOptionId)?.isCorrect ? '+25 XP' : '+5 XP for Learning'}
                 </span>
               </div>
 
               {/* WHY IT'S RIGHT */}
-              <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/25 space-y-1.5">
-                <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
-                  <CheckCircle2 className="w-4 h-4" />
+              <div className="p-4 sm:p-5 rounded-xl bg-emerald-50/90 border border-emerald-200 space-y-1.5 shadow-xs">
+                <div className="flex items-center gap-2 text-emerald-900 font-extrabold text-xs uppercase tracking-wider">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700" />
                   Why the correct option is right:
                 </div>
-                <p className="text-sm text-slate-200 leading-relaxed">
+                <p className="text-sm sm:text-base text-slate-800 leading-relaxed font-normal">
                   {currentQ.whyRight}
                 </p>
               </div>
 
               {/* WHY EACH INCORRECT OPTION IS WRONG (Distractor Breakdown) */}
-              <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-3">
-                <div className="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase tracking-wider">
-                  <XCircle className="w-4 h-4" />
+              <div className="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-3 shadow-xs">
+                <div className="flex items-center gap-2 text-rose-800 font-extrabold text-xs uppercase tracking-wider">
+                  <XCircle className="w-4 h-4 text-rose-600" />
                   Why each distractor is wrong:
                 </div>
                 <div className="space-y-2.5">
                   {currentQ.whyWrong.map((distractor, idx) => (
-                    <div key={idx} className="text-xs text-slate-300 p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80">
-                      <strong className="text-rose-300 block mb-0.5">
+                    <div key={idx} className="text-xs sm:text-sm text-slate-700 p-3 rounded-lg bg-white border border-slate-200 shadow-xs">
+                      <strong className="text-rose-800 font-bold block mb-1">
                         {distractor.optionText}:
                       </strong>
-                      <span className="text-slate-400">{distractor.reason}</span>
+                      <span className="text-slate-600 leading-relaxed">{distractor.reason}</span>
                     </div>
                   ))}
                 </div>
@@ -559,27 +536,27 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
               {/* RELATABLE REAL-WORLD ANALOGY */}
               {currentQ.analogy && (
-                <div className="p-4 rounded-xl bg-sky-950/30 border border-sky-500/30 space-y-1.5">
-                  <div className="flex items-center gap-2 text-sky-400 font-bold text-xs uppercase tracking-wider">
-                    <Lightbulb className="w-4 h-4 text-amber-400" />
+                <div className="p-4 sm:p-5 rounded-xl bg-amber-50/90 border border-amber-200 space-y-1.5 shadow-xs">
+                  <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs uppercase tracking-wider">
+                    <Lightbulb className="w-4 h-4 text-amber-600" />
                     Relatable Real-World Analogy:
                   </div>
-                  <p className="text-sm text-sky-100 leading-relaxed font-medium">
+                  <p className="text-sm sm:text-base text-slate-800 leading-relaxed font-normal">
                     {currentQ.analogy}
                   </p>
                 </div>
               )}
 
               {/* Microsoft Learn Reference */}
-              <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 pt-2">
-                <div className="flex items-center gap-1.5 text-slate-400">
-                  <BookOpen className="w-3.5 h-3.5 text-sky-400" />
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 pt-2">
+                <div className="flex items-center gap-1.5 font-medium text-slate-600">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-700" />
                   <span>{currentQ.officialLearnRef}</span>
                 </div>
 
                 <button
                   onClick={() => onAskAI(`Deep dive: Why is "${currentQ.question}" answered this way? Give me another analogy.`)}
-                  className="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 cursor-pointer"
+                  className="text-emerald-800 hover:text-emerald-950 font-bold flex items-center gap-1 cursor-pointer"
                 >
                   <Bot className="w-3.5 h-3.5" />
                   <span>Ask AI Coach for more examples</span>
@@ -587,22 +564,22 @@ export const QuizView: React.FC<QuizViewProps> = ({
               </div>
 
               {/* Next Question / Finish Button */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-200">
                 <button
                   disabled={generatingAiQuestion}
                   onClick={() => handleGenerateAiQuestion(currentQ.topic, currentQ.domain)}
-                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-900 text-xs font-bold border border-emerald-300 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                   title="Generate another authentic question on this exact topic"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-                  <span>{generatingAiQuestion ? 'Generating...' : 'AI Practice Drill on this Topic'}</span>
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{generatingAiQuestion ? 'Generating Drill...' : 'AI Practice Drill on this Topic'}</span>
                 </button>
 
                 <button
                   onClick={handleNextQuestion}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-slate-950 font-bold text-sm shadow-lg shadow-sky-500/25 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
                 >
-                  <span>{currentIndex + 1 < questions.length ? 'Next Question' : 'Finish & View Score'}</span>
+                  <span>{currentIndex + 1 < questions.length ? 'Next Question' : 'Complete Quiz'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
